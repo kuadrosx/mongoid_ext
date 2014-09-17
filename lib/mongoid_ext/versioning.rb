@@ -112,9 +112,7 @@ module Versioning
         cattr_accessor :parent_class
         self.parent_class = parent_klass
 
-        self.storage_options = {
-          :collection => "#{self.parent_class.collection_name}.versions"
-        }
+        store_in collection: "#{self.parent_class.collection_name}.versions"
 
         field :message, :type => String
         field :data, :type => Hash
@@ -138,8 +136,10 @@ module Versioning
 
         private
         def add_version
-          self.class.parent_class.push({:_id => self.target_id}, {:version_ids => self.id})
-          self.class.parent_class.increment({:_id => self.target_id}, {:versions_count => 1})
+          self.collection.find({:_id => self.target_id}).update({
+            :$push => {:version_ids => self.id},
+            :$inc =>  {:versions_count => 1}
+          })
         end
       end
     end
