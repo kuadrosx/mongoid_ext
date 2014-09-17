@@ -53,7 +53,11 @@ class EmbeddedHash < Hash
 
   def assign_id
     if fetch("_id", nil).nil?
-      self["_id"] = Moped::BSON::ObjectId.new.to_s
+      if defined? Moped::BSON::ObjectId
+        self["_id"] = Moped::BSON::ObjectId.new.to_s
+      else
+        self["_id"] = BSON::ObjectId.new.to_s
+      end
     end
   end
 end

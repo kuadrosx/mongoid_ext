@@ -55,7 +55,10 @@ require 'mongoid_ext/random'
 require 'mongoid_ext/mongo_mapper'
 require 'mongoid_ext/document_ext'
 require 'mongoid_ext/criteria_ext'
-require 'mongoid_ext/modifiers'
+
+if Gem.loaded_specs["mongoid"].version.to_s.starts_with? '3'
+  require 'mongoid_ext/modifiers'
+end
 
 module MongoidExt
   def self.init
