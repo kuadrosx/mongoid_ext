@@ -59,7 +59,7 @@ module MongoidExt
           updates[self.atomic_position+".votes_down"] = 1
         end
 
-        self._parent.increment(updates)
+        self._parent.inc(updates)
       else
         updates = {:votes_count => 1, :votes_average => value.to_i}
         if value == 1
@@ -68,7 +68,7 @@ module MongoidExt
           updates[:votes_down] = 1
         end
 
-        self.increment(updates)
+        self.inc(updates)
       end
 
       block.call(value, :add) if block
@@ -95,7 +95,7 @@ module MongoidExt
           updates[:votes_down] = -1
         end
 
-        self.increment(updates)
+        self.inc(updates)
       end
 
       block.call(value, :remove) if block
