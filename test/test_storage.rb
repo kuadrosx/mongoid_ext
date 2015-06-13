@@ -1,110 +1,96 @@
 require 'helper'
 
-class StorageTest < Test::Unit::TestCase
-  context "Storing files" do
-    setup do
-      @avatar = Avatar.create
-      @data = StringIO.new("my avatar image")
+class StorageTest < Minitest::Test
+  def setup
+    @avatar = Avatar.create
+    @data = StringIO.new("my avatar image")
+    @new_avatar = Avatar.new
+  end
+
+  def test_store_file
+    @avatar.put_file("an_avatar.png", @data)
+    @avatar.save
+    avatar = Avatar.find(@avatar.id)
+    data = avatar.fetch_file("an_avatar.png").data
+    assert_equal data, "my avatar image"
+  end
+
+  def test_not_close_the_file_after_storing
+    @avatar.put_file("an_avatar.png", @data)
+    assert_predicate @data, :closed?
+  end
+
+  def test_store_a_given_file
+    @avatar.data = @data
+    @avatar.save!
+
+    refute_nil @avatar.data, nil
+    assert_equal @avatar.data.data, "my avatar image"
+  end
+
+  def test_store_data_correctly
+    @avatar.data = @data
+    @avatar.save
+    @avatar = Avatar.find(@avatar.id)
+    assert_equal @avatar.data.data, "my avatar image"
+  end
+
+  def store_file_after_saving
+    @new_avatar.put_file("an_avatar.png", @data)
+    @new_avatar.save
+    assert_equal @new_avatar.fetch_file("an_avatar.png").data, "my avatar image"
+  end
+
+  def test_not_store_file_with_permanent_object
+    @avatar.put_file("an_avatar.png", @data)
+    assert_nil @avatar.fetch_file("an_avatar.png").data
+  end
+
+  def teardown
+    @alternative.close if @alternative
+  end
+
+  def setup_alternative
+    @avatar = Avatar.new
+    @alternative = File.new(__FILE__)
+    @data = File.read(__FILE__)
+  end
+
+  def test_store_file_in_list
+    setup_alternative
+    @avatar.first_alternative = @alternative
+    @avatar.save
+    fromdb = @avatar.reload
+    assert_equal fromdb.first_alternative.data, @data
+  end
+
+  def test_store_file_in_alternative_list
+    @avatar.alternatives.put("an_alternative", @alternative)
+    @avatar.save
+    @avatar.reload
+    assert_equal @avatar.alternatives.get("an_alternative").data, @data
+  end
+
+  def test_fetch_list_of_files
+    [1,2,3].each do |n|
+      @avatar.put_file("file#{n}", StringIO.new("data#{n}"))
     end
-
-    should "store the file" do
-      @avatar.put_file("an_avatar.png", @data)
-      @avatar.save
-      avatar = Avatar.find(@avatar.id)
-      data = avatar.fetch_file("an_avatar.png").data
-      data.should == "my avatar image"
-    end
-
-    should "not close the file after storing" do
-      @avatar.put_file("an_avatar.png", @data)
-      @data.should_not be_closed
-    end
-
-    context "in attributes" do
-      should "store the given file" do
-        @avatar.data = @data
-        @avatar.save!
-        @avatar.data.should_not be_nil
-        @avatar.data.data.should == "my avatar image"
-      end
-    end
-
-    context "with new objects" do
-      setup do
-        @avatar = Avatar.new
-      end
-
-      should "store the data correctly" do
-        @avatar.data = @data
-        @avatar.save
-        @avatar = Avatar.find(@avatar.id)
-        @avatar.data.data.should == "my avatar image"
-      end
-
-      should "store the file after saving" do
-        @avatar.put_file("an_avatar.png", @data)
-        @avatar.save
-        @avatar.fetch_file("an_avatar.png").data.should == "my avatar image"
-      end
-
-      should "not store the file if object is new" do
-        @avatar.put_file("an_avatar.png", @data)
-        @avatar.fetch_file("an_avatar.png").data.should be_nil
-      end
-    end
-
-    context "with lists" do
-      setup do
-        @avatar = Avatar.new
-        @alternative = File.new(__FILE__)
-        @data = File.read(__FILE__)
-      end
-      teardown do
-        @alternative.close
-      end
-
-      should "store the file" do
-        @avatar.first_alternative = @alternative
-        @avatar.save
-        fromdb = @avatar.reload
-        fromdb.first_alternative.data.should == @data
-      end
-
-      should "store the file in the alternative list" do
-        @avatar.alternatives.put("an_alternative", @alternative)
-        @avatar.save
-        @avatar.reload
-        @avatar.alternatives.get("an_alternative").data.should == @data
-      end
+    file_names = @avatar.files.map { |f| f.filename }
+    assert_equal file_names.size, 3
+    [1,2,3].each do |n|
+      assert_includes file_names, "file#{n}"
     end
   end
 
-  context "Fetching files" do
-    setup do
-      @avatar = Avatar.create
-      @data = StringIO.new("my avatar image")
+  def test_iterate_list_of_files
+    [1,2,3].each do |n|
+      @avatar.put_file("file#{n}", StringIO.new("data#{n}"))
     end
 
-    should "fetch the list of files" do
-      @avatar.put_file("file1", StringIO.new("data1"))
-      @avatar.put_file("file2", StringIO.new("data2"))
-      @avatar.put_file("file3", StringIO.new("data3"))
-      file_names = @avatar.files.map { |f| f.filename }
-      file_names.size.should == 3
-      file_names.should include("file1")
-      file_names.should include("file2")
-      file_names.should include("file3")
+    file_names = %w[file1 file2 file3]
+    @avatar.file_list.each_file do |key, file|
+      assert_includes file_names, key
+      assert_includes file_names, file.filename
     end
-
-   should "iterate the list of files" do
-      @avatar.put_file("file1", StringIO.new("data1"))
-      @avatar.put_file("file2", StringIO.new("data2"))
-      @avatar.put_file("file3", StringIO.new("data3"))
-      file_names = %w[file1 file2 file3]
-      @avatar.file_list.each_file do |key, file|
-        file_names.should include key
-        file_names.should include file.filename
-      end
-   end
   end
 end

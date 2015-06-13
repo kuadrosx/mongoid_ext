@@ -1,77 +1,76 @@
 require 'helper'
 
-class TestVoteable < Test::Unit::TestCase
-  context "working with votes" do
-    setup do
-      User.delete_all
-      @user = User.create!(:login => "foo", :email => "foo@bar.baz")
-    end
+class TestVoteable < Minitest::Test
 
-    should "store the votes average" do
-      @user.vote!(1, "voter_id1")
-      @user.vote!(1, "voter_id2")
-      @user.vote!(-1, "voter_id3")
+  def setup
+    User.delete_all
+    @user = User.create!(:login => "foo", :email => "foo@bar.baz")
+  end
 
-      @user.reload
-      @user.votes_average.should == 1
-    end
+  def test_votes_average
+    @user.vote!(1, "voter_id1")
+    @user.vote!(1, "voter_id2")
+    @user.vote!(-1, "voter_id3")
 
-    should "store the votes count" do
-      @user.vote!(1, "voter_id1")
-      @user.vote!(1, "voter_id2")
-      @user.vote!(-1, "voter_id3")
-      @user.vote!(-1, "voter_id4")
+    @user.reload
+    assert_equal @user.votes_average, 1
+  end
 
-      @user.reload
-      @user.votes_count.should == 4
-    end
+  def test_votes_count
+    @user.vote!(1, "voter_id1")
+    @user.vote!(1, "voter_id2")
+    @user.vote!(-1, "voter_id3")
+    @user.vote!(-1, "voter_id4")
 
-    should "only store one vote by voter_id" do
-      @user.vote!(1, "voter_id1")
-      @user.vote!(1, "voter_id1")
-      @user.vote!(1, "voter_id1")
-      @user.reload
-      @user.votes_count.should == 1
-    end
+    @user.reload
+    assert_equal @user.votes_count, 4
+  end
 
-    should "allow to change the vote" do
-      @user.vote!(1, "voter_id1")
-      @user.vote!(-1, "voter_id1")
+  def test_one_vote_by_voter_id
+    @user.vote!(1, "voter_id1")
+    @user.vote!(1, "voter_id1")
+    @user.vote!(1, "voter_id1")
+    @user.reload
+    assert_equal @user.votes_count, 1
+  end
 
-      @user.reload
-      @user.votes_count.should == 1
-      @user.votes_average.should == -1
-    end
+  def test_change_vote
+    @user.vote!(1, "voter_id1")
+    @user.vote!(-1, "voter_id1")
 
-    should "count the votes" do
-      @user.vote!(1, "voter_id1")
-      @user.vote!(1, "voter_id2")
-      @user.vote!(-1, "voter_id3")
-      @user.vote!(-1, "voter_id4")
-      @user.vote!(-1, "voter_id5")
+    @user.reload
+    assert_equal @user.votes_count, 1
+    assert_equal @user.votes_average, -1
+  end
 
-      @user.reload
-      @user.votes_average.should == -1
-      @user.votes_up.should == 2
-      @user.votes_down.should == 3
-    end
+  def test_count_votes
+    @user.vote!(1, "voter_id1")
+    @user.vote!(1, "voter_id2")
+    @user.vote!(-1, "voter_id3")
+    @user.vote!(-1, "voter_id4")
+    @user.vote!(-1, "voter_id5")
 
-    should "check if a voter_id already voted" do
-      @user.vote!("1", "voter_id1")
-      @user.vote!("1", "voter_id2")
+    @user.reload
+    assert_equal @user.votes_average, -1
+    assert_equal @user.votes_up, 2
+    assert_equal @user.votes_down, 3
+  end
 
-      @user.voted?("voter_id1").should be_true
-      @user.reload
-      @user.voted?("voter_id1").should be_true
-      @user.voted?("voter_id3").should be_false
-    end
+  def test_voted?
+    @user.vote!("1", "voter_id1")
+    @user.vote!("1", "voter_id2")
 
-    should "check the voter id even if votes was not loaded" do
-      @user.vote!("1", "voter_id1")
-      @user = User.without(:votes).find(@user.id)
-      @user.voted?("voter_id1").should be_true
-      @user.voted?("voter_id2").should be_false
-    end
+    assert_equal @user.voted?("voter_id1"), true
+    @user.reload
+    assert_equal @user.voted?("voter_id1"), true
+    assert_equal @user.voted?("voter_id3"), false
+  end
+
+  def test_voted_without_load_votes
+    @user.vote!("1", "voter_id1")
+    @user = User.without(:votes).find(@user.id)
+    assert_equal @user.voted?("voter_id1"), true
+    assert_equal @user.voted?("voter_id2"), false
   end
 end
 

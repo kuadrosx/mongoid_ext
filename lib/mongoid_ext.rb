@@ -1,16 +1,20 @@
 $:.unshift File.dirname(__FILE__)
 require 'bundler/setup'
 
-if RUBY_VERSION =~ /^1\.8/
-  $KCODE = 'u'
-end
-
 Bundler.require
 require 'mongoid'
-require 'mongoid-grid_fs'
 require 'uuidtools'
 require 'differ'
 require 'active_support/inflector'
+MONGOID5 = Gem.loaded_specs["mongoid"].version.to_s.starts_with? '5'
+
+unless MONGOID5
+  begin
+    require 'mongoid-grid_fs'
+  rescue LoadError
+    $stderr.puts "disabling `storage` support. use 'gem install mongoid-grid_fs' to enable it"
+  end
+end
 
 begin
   require 'magic'

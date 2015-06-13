@@ -23,7 +23,12 @@ module MongoidExt
         pipeline <<  {:$project => {:_id => 0, :name => '$_id', :count => 1}}
         pipeline <<  {:$sort => {:count => -1}}
         pipeline <<  {:$limit => limit}
-        self.collection.aggregate(pipeline)
+
+        if MONGOID5
+          self.collection.find.aggregate(pipeline)
+        else
+          self.collection.aggregate(pipeline)
+        end
       end
 
       # Model.find_with_tags("budget", "big").limit(4)
@@ -50,7 +55,12 @@ module MongoidExt
         pipeline <<  {:$project => {:_id => 0, :name => '$_id', :count => 1}}
         pipeline <<  {:$sort => {:count => -1}}
         pipeline <<  {:$limit => limit}
-        self.collection.aggregate(pipeline)
+
+        if MONGOID5
+          self.collection.find.aggregate(pipeline)
+        else
+          self.collection.aggregate(pipeline)
+        end
       end
     end
   end

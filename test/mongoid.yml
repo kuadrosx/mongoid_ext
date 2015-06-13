@@ -1,19 +1,18 @@
 test:
-  sessions:
+  clients:
     default:
-      hosts:
-        - localhost:27017
       database: mongoidext-test
+      hosts:
+        - localhost
       options:
-        safe: true
+        read:
+          mode: primary
+        max_pool_size: 1
   options:
-    allow_dynamic_fields: false
-    identity_map_enabled: true
     include_root_in_json: false
-    include_type_for_serialization: true
+    include_type_for_serialization: false
     preload_models: false
-    scope_overwrite_exception: true
-    raise_not_found_error: false
-    skip_version_check: false
+    scope_overwrite_exception: false
+    raise_not_found_error: true
     use_activesupport_time_zone: true
-    use_utc: true
+    use_utc: false

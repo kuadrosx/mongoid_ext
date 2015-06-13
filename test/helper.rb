@@ -1,28 +1,40 @@
+require 'simplecov'
+
+module SimpleCov::Configuration
+  def clean_filters
+    @filters = []
+  end
+end
+
+SimpleCov.configure do
+  clean_filters
+  load_profile 'test_frameworks'
+end
+
+ENV["COVERAGE"] && SimpleCov.start do
+  add_filter "/.rvm/"
+end
 require 'rubygems'
+require 'bundler'
+begin
+  Bundler.setup(:default, :development)
+rescue Bundler::BundlerError => e
+  $stderr.puts e.message
+  $stderr.puts "Run `bundle install` to install missing gems"
+  exit e.status_code
+end
+require "minitest/autorun"
+require 'minitest/unit'
 
-gem 'jnunemaker-matchy'
-
-require 'matchy'
-require 'shoulda'
-require 'timecop'
-require 'mocha'
-require 'pp'
-require 'pry'
-
-$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 $LOAD_PATH.unshift(File.dirname(__FILE__))
-
-require 'support/custom_matchers'
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'mongoid_ext'
 
 Mongoid.load!("test/mongoid.yml", "test")
+Mongo::Logger.logger.level = Logger::WARN
 require 'models'
 
-
-class Test::Unit::TestCase
-  include CustomMatchers
+class MiniTest::Unit::TestCase
 end
 
-MongoidExt.init
-
-$VERBOSE=nil
+Minitest.autorun

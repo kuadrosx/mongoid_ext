@@ -76,7 +76,11 @@ module Versioning
   end
 
   def current_version
-    version_klass.new(:data => self.attributes, self.class.versionable_options[:owner_field] => (self.updated_by_id_was || self.updated_by_id), :created_at => Time.now)
+    version_klass.new(
+      :data => self.attributes,
+      self.class.versionable_options[:owner_field] => (self.updated_by_id_was || self.updated_by_id),
+      :created_at => Time.now
+    )
   end
 
   def version_at(pos)
@@ -88,7 +92,8 @@ module Versioning
     when "last"
       version_klass.find(self.version_ids.last)
     else
-      if version_id = self.version_ids[pos]
+      version_id = self.version_ids[pos]
+      if version_id
         version_klass.find(self.version_ids[pos])
       end
     end
@@ -108,6 +113,7 @@ module Versioning
       @version_klass ||= Class.new do
         include Mongoid::Document
         include Mongoid::Timestamps
+        include Mongoid::Attributes::Dynamic
 
         cattr_accessor :parent_class
         self.parent_class = parent_klass
@@ -135,11 +141,22 @@ module Versioning
         end
 
         private
+        def target_class
+          @target_class ||= self.target_type.constantize
+        end
+
         def add_version
-          self.collection.find({:_id => self.target_id}).update({
-            :$push => {:version_ids => self.id},
-            :$inc =>  {:versions_count => 1}
-          })
+          if MONGOID5
+            target_class.collection.find({:_id => self.target_id}).update_one({
+              :$push => {:version_ids => self.id},
+              :$inc =>  {:versions_count => 1}
+            })
+          else
+            target_class.collection.find({:_id => self.target_id}).update({
+              :$push => {:version_ids => self.id},
+              :$inc =>  {:versions_count => 1}
+            })
+          end
         end
       end
     end
@@ -164,6 +181,8 @@ module Versioning
       self.versionable_options[:user_class] = relationship.class_name
 
       define_method(:save_version) do
+        return true if self.new_record?
+
         data = {}
         message = ""
         keys.each do |key|
@@ -173,31 +192,32 @@ module Versioning
             data[key.to_s] = self[key]
           end
         end
+        return true if data.empty?
 
         if message_changes = self.changes["version_message"]
           message = message_changes.first
         else
-          version_message = ""
+          message = ""
         end
 
         uuser_id = send(self.versionable_options[:owner_field]+"_was")||send(self.versionable_options[:owner_field])
-        if !self.new_record? && !data.empty? && uuser_id
-          max_versions = self.versionable_options[:max_versions].to_i
-          if max_versions > 0 && self.version_ids.size >= max_versions
-            old = self.version_ids.slice!(0, max_versions-1)
-            self.class.skip_callback(:save, :before, :save_version)
-            self.version_klass.where(:_id.in => old).delete_all
-            self.save
-            self.class.set_callback(:save, :before, :save_version)
-          end
+        return true unless uuser_id
 
-          self.version_klass.create!({
-            'data' => data,
-            'owner_id' => uuser_id,
-            'target' => self,
-            'message' => message
-          })
+        max_versions = self.versionable_options[:max_versions].to_i
+        if max_versions > 0 && self.version_ids.size >= max_versions
+          old = self.version_ids.slice!(0, max_versions-1)
+          self.class.skip_callback(:save, :before, :save_version)
+          self.version_klass.where(:_id.in => old).delete_all
+          self.save
+          self.class.set_callback(:save, :before, :save_version)
         end
+
+        self.version_klass.create!({
+          'data' => data,
+          'owner_id' => uuser_id,
+          'target' => self,
+          'message' => message
+        })
       end
 
       define_method(:versioned_keys) do

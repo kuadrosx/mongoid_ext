@@ -1,31 +1,29 @@
 require 'helper'
 
-class SetTest < Test::Unit::TestCase
+class SetTest < Minitest::Test
   def from_db
     Recipe.find(@recipe.id)
   end
 
-  context "working with sets" do
-    setup do
-      @recipe = Recipe.new
-      @recipe.ingredients = Set.new(%w[salt sugar water salt sugar water])
-      @recipe.save
-    end
+  def setup
+    @recipe = Recipe.new
+    @recipe.ingredients = Set.new(%w[salt sugar water salt sugar water])
+    @recipe.save
+  end
 
-    should "not have duplicates" do
-      from_db.ingredients.size.should == 3
-      from_db.ingredients.should include("salt")
-      from_db.ingredients.should include("sugar")
-      from_db.ingredients.should include("water")
-    end
+  def test_not_duplicates
+    assert_equal from_db.ingredients.size, 3
+    assert_includes from_db.ingredients, "salt"
+    assert_includes from_db.ingredients, "sugar"
+    assert_includes from_db.ingredients, "water"
+  end
 
-    should "not add duplicates" do
-      original_size = @recipe.ingredients.size
-      @recipe.ingredients << "salt"
-      @recipe.save
-      @recipe.reload
+  def test_not_add_duplicates
+    original_size = @recipe.ingredients.size
+    @recipe.ingredients << "salt"
+    @recipe.save
+    @recipe.reload
 
-      @recipe.ingredients.size.should == original_size
-    end
+    assert_equal @recipe.ingredients.size, original_size
   end
 end

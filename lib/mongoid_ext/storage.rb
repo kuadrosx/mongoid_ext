@@ -3,8 +3,10 @@ module MongoidExt
     extend ActiveSupport::Concern
 
     included do
-      validate :__add_storage_errors
-      file_list :file_list
+      if MONGOID5 || defined?(Mongoid::GridFS)
+        validate :__add_storage_errors
+        file_list :file_list
+      end
     end
 
     def put_file(name, io, options = {})
@@ -41,7 +43,13 @@ module MongoidExt
 
     module ClassMethods
       def gridfs
-        @gridfs ||= Mongoid::GridFS
+        @gridfs ||= begin
+          if MONGOID5
+            collection.database.fs
+          else
+            Mongoid::GridFS
+          end
+        end
       end
 
       def file_list(name)
@@ -73,7 +81,11 @@ module MongoidExt
 
           query = doc._updates
           if !query.blank?
-            doc.collection.find(:_id => doc.id).update(query, {:multi => true})
+            if MONGOID5
+              doc.collection.find(:_id => doc.id).update_one(query)
+            else
+              doc.collection.find(:_id => doc.id).update(query)
+            end
           end
         end
 
@@ -105,7 +117,7 @@ module MongoidExt
               file = StringIO.new(file)
             end
 
-            fl.get(name.to_s).put(name.to_s, file)
+            fl.put(name.to_s, file)
           else
             # we store the errors here because we want to validate before storing the file
             storage_errors.merge!(self.errors)

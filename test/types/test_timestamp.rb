@@ -1,40 +1,41 @@
 require 'helper'
 
-class TimestampTest < Test::Unit::TestCase
+class TimestampTest < Minitest::Test
   def from_db
     Event.find(@event.id)
   end
 
-  context "working with timestamps" do
-    setup do
-      Event.delete_all
+  def setup
+    Event.delete_all
 
-      Time.zone = 'UTC'
-      @start_time = Time.zone.parse('01-01-2009')
-      @end_time = @start_time.tomorrow
+    Time.zone = 'UTC'
+    @start_time = Time.zone.parse('01-01-2009')
+    @end_time = @start_time.tomorrow
 
-      @event = Event.create!(:start_date => @start_time.to_i, :end_date => @end_time.to_i)
-    end
+    @event = Event.create!(
+      :start_date => @start_time.to_i,
+      :end_date => @end_time.to_i
+    )
+  end
 
-    should "store the date" do
-      from_db.start_date.to_s.should == @start_time.to_s
-    end
+  def test_store_date
+    assert_equal from_db.start_date.to_s, @start_time.to_s
+  end
 
-    should "be able to convert the time to the given timezone" do
-      Time.zone = 'Hawaii'
-      from_db.start_date.to_s.should == "2008-12-31 14:00:00 -1000"
-    end
+  def test_time_to_given_timezone
+    Time.zone = 'Hawaii'
+    assert_equal from_db.start_date.to_s, "2008-12-31 14:00:00 -1000"
+  end
 
-    should "be able to compare dates" do
-      start_time = @start_time.tomorrow.tomorrow
-      end_time = start_time.tomorrow
+  def test_compare_dates
+    start_time = @start_time.tomorrow.tomorrow
+    end_time = start_time.tomorrow
 
-      @event2 = Event.create!(:start_date => start_time.utc, :end_date => end_time.utc)
+    @event2 = Event.create!(:start_date => start_time.utc, :end_date => end_time.utc)
 
-      Event.count.should == 2
-      events = Event.where("this.start_date >= %d && this.start_date <= %d" % [@event.start_date.yesterday.to_i, @event2.start_date.yesterday.to_i])
+    assert_equal Event.count, 2
+    events = Event.where("this.start_date >= %d && this.start_date <= %d" % [@event.start_date.yesterday.to_i, @event2.start_date.yesterday.to_i])
 
-      events.should == [@event]
-    end
+    assert_equal events, [@event]
   end
 end

@@ -1,22 +1,20 @@
 require 'helper'
 
-class OpenStructTest < Test::Unit::TestCase
+class OpenStructTest < Minitest::Test
   def from_db
     UserConfig.find(@config.id)
   end
 
-  context "working with sets" do
-    setup do
-      @config = UserConfig.create!()
-    end
+  def setup
+    @config = UserConfig.create!
+  end
 
-    should "allow to add new keys" do
-      entries = MongoidExt::OpenStruct.new()
-      entries.new_key = "my new key"
-      @config.entries = entries
-      @config.save
+  def test_add_new_keys
+    entries = MongoidExt::OpenStruct.new
+    entries.new_key = "my new key"
+    @config.entries = entries
+    @config.save
 
-      from_db.entries.new_key.should == "my new key"
-    end
+    assert_equal from_db.entries.new_key, "my new key"
   end
 end

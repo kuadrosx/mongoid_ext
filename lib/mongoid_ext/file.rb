@@ -43,19 +43,35 @@ module MongoidExt
       end
 
       options[:filename] = grid_filename
-      gridfs.delete(grid_filename)
-      gridfs.put(io, options)
+      if MONGOID5
+        old = gridfs.find_one(:filename => grid_filename)
+        gridfs.delete_one(old) if old
 
-      if file = self.get
-        self['md5'] = file.md5
+        # MONGO::Grid::File don't accept the same options that Mongoid::Gridfs
+        gridfs.insert_one(
+          Mongo::Grid::File.new(io.read, {:filename => grid_filename})
+        )
+      else
+        gridfs.delete(grid_filename)
+        gridfs.put(io, options)
       end
+
+      file = self.get
+      self['md5'] = file.md5 if file
+
+      file
     end
 
     def get
       @io ||= begin
         io = nil
         begin
-          io = gridfs.get(grid_filename)
+          if MONGOID5
+            io = gridfs.find_one(:filename => grid_filename)
+          else
+            io = gridfs.get(grid_filename)
+          end
+
           def io.read
             self.data
           end
@@ -109,7 +125,11 @@ module MongoidExt
 
     def delete
       @io = nil
-      gridfs.delete(grid_filename)
+      if MONGOID5
+        gridfs.delete_one(grid_filename)
+      else
+        gridfs.delete(grid_filename)
+      end
     end
 
     #def method_missing(name, *args, &block)

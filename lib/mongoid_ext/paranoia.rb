@@ -76,7 +76,7 @@ module MongoidExt #:nodoc:
           self.parent_class = parent_klass
 
           collection_name = "#{self.parent_class.collection.name}.trash"
-          self.storage_options = {:collection => collection_name}
+          store_in :collection => collection_name
 
           field :document, :type => Hash
 

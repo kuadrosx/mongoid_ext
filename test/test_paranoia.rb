@@ -1,40 +1,40 @@
 require 'helper'
 
-class TestParanoia < Test::Unit::TestCase
-  context "working with versions" do
-    setup do
-      User.delete_all
-      User.deleted.delete_all
+class TestParanoia < Minitest::Test
+  def setup
+    User.delete_all
+    User.deleted.delete_all
 
-      @user = User.create(:login => "foo",
-                          :email => "foo@bar.baz")
-    end
+    @user = User.create(
+      :login => "foo",
+      :email => "foo@bar.baz"
+    )
+  end
 
-    should "not delete permanently the record" do
-      @user.destroy
-      User.deleted.count.should == 1
-      User.count.should == 0
-    end
+  def test_not_delete_permanently
+    @user.destroy
+    assert_equal User.deleted.count, 1
+    assert_equal User.count, 0
+  end
 
-    should "restore the deleted record" do
-      @user.destroy
-      User.deleted.first.restore.email.should == "foo@bar.baz"
-    end
+  def test_restore_deleted_record
+    @user.destroy
+    assert_equal User.deleted.first.restore.email, "foo@bar.baz"
+  end
 
-    should "delete the old records" do
-      @user.destroy
-      deleted = User.deleted.first
-      deleted.created_at = 2.months.ago
-      deleted.save
+  def test_delete_old_records
+    @user.destroy
+    deleted = User.deleted.first
+    deleted.created_at = 2.months.ago
+    deleted.save
 
-      User.deleted.compact!
-      User.deleted.count.should == 0
-    end
+    User.deleted.compact!
+    assert_equal User.deleted.count, 0
+  end
 
-    should "find the record using the original id" do
-      id = @user.id
-      @user.destroy
-      User.deleted.find(id).should_not be_nil
-    end
+  def test_find_record_using_original_id
+    id = @user.id
+    @user.destroy
+    assert_equal User.deleted.find(id).nil?, false
   end
 end
