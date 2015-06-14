@@ -10,7 +10,7 @@ MONGOID5 = Gem.loaded_specs["mongoid"].version.to_s.starts_with? '5'
 
 unless MONGOID5
   begin
-    require 'mongoid-grid_fs'
+    require 'mongoid/grid_fs'
   rescue LoadError
     $stderr.puts "disabling `storage` support. use 'gem install mongoid-grid_fs' to enable it"
   end

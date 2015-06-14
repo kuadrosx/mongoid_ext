@@ -60,7 +60,7 @@ Gem::Specification.new do |s|
     "test/helper.rb",
     "test/models.rb",
     "test/mongoid.yml",
-    "test/support/custom_matchers.rb",
+    "test/mongoid4.yml",
     "test/test_encryptor.rb",
     "test/test_filter.rb",
     "test/test_modifiers.rb",
