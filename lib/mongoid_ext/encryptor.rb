@@ -11,6 +11,8 @@ module MongoidExt
         key = options.delete(:key)
         raise ArgumentError, ":key option must be given" if key.nil?
 
+        type = options.delete(:type)
+
         field(name, options)
         alias_method :"#{name}_encrypted", name
 
@@ -18,14 +20,14 @@ module MongoidExt
           value = [send(:"#{name}_encrypted").to_s].pack('H*')
 
           return if value.blank?
-          Marshal.load(::Encryptor.decrypt(value, :key => key))
+          type.demongoize(Marshal.load(::Encryptor.decrypt(value, :key => key)))
         end
 
         define_method("#{name}=") do |v|
           marshaled = Marshal.dump(v)
           enc_value = ::Encryptor.encrypt(marshaled, :key => key).unpack('H*')[0]
 
-          attributes[name.to_s] = enc_value
+          self[name.to_sym] = enc_value
         end
       end
     end
