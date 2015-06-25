@@ -40,11 +40,6 @@ require 'mongoid_ext/file_server'
 # update
 require 'mongoid_ext/update'
 
-# filter
-require 'mongoid_ext/filter'
-require 'mongoid_ext/filter/parser'
-require 'mongoid_ext/filter/result_set'
-
 # slug
 require 'mongoid_ext/slugizer'
 

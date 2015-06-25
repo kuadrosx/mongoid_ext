@@ -17,6 +17,11 @@ module MongoidExt
         end
 
         get(id).put(filename, io, metadata)
+        self[id] = {
+          filename: filename
+        }.merge(metadata)
+
+        self[id]
       else
         (@_pending_files ||= {})[id] = [io, metadata]
       end
@@ -88,8 +93,8 @@ module MongoidExt
       return if v.nil?
 
       doc = self.class.new
-      v.each do |k,v|
-        doc[k] = MongoidExt::File.new(v)
+      v.each do |k,c|
+        doc[k] = MongoidExt::File.new(c)
       end
 
       doc
