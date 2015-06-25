@@ -30,8 +30,14 @@ $LOAD_PATH.unshift(File.dirname(__FILE__))
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'mongoid_ext'
 
-Mongoid.load!("test/mongoid.yml", "test")
-Mongo::Logger.logger.level = Logger::WARN
+if MONGOID5
+  Mongoid.load!("test/mongoid.yml", "test")
+else
+  Mongoid.load!("test/mongoid4.yml", "test")
+end
+
+Mongo::Logger.logger.level = Logger::WARN if MONGOID5
+
 require 'models'
 
 class MiniTest::Unit::TestCase

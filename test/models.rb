@@ -19,10 +19,6 @@ end
 
 class Recipe # for Set
   include Mongoid::Document
-  include MongoidExt::Filter
-
-  language Proc.new { |d| d.language }
-  filterable_keys :language
 
   field :ingredients, :type => Set
   field :description, :type => String
@@ -55,14 +51,11 @@ end
 
 class BlogPost # for Slug and Filter
   include Mongoid::Document
-  include MongoidExt::Filter
   include MongoidExt::Slugizer
   include MongoidExt::Tags
   include MongoidExt::Versioning
 
-  filterable_keys :title, :body, :tags, :date
   slug_key :title, :max_length => 18, :min_length => 3, :callback_type => :before_validation, :add_prefix => true
-  language :find_language
 
   field :title, :type => String
   field :body, :type => String
@@ -72,10 +65,6 @@ class BlogPost # for Slug and Filter
   belongs_to :updated_by, :class_name => "User"
 
   versionable_keys :title, :body, :tags, :owner_field => "updated_by_id", :max_versions => 2
-
-  def find_language
-    'en'
-  end
 end
 
 class Entry
