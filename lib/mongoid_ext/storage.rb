@@ -69,13 +69,13 @@ module MongoidExt
           end
 
           list.parent_document = self
-          list.list_name = name
+          list.list_name = name.to_s
 
           instance_variable_set(varname, list)
           list
         end
 
-        set_callback(:create, :after) do |doc|
+        set_callback(:save, :after) do |doc|
           l = doc.send(name)
           l.sync_files
 
@@ -99,7 +99,10 @@ module MongoidExt
 
         define_method("#{name}=") do |file|
           if opts[:max_length] && file.respond_to?(:size) && file.size > opts[:max_length]
-            errors.add(name, I18n.t("mongoid_ext.storage.errors.max_length", :default => "file is too long. max length is #{opts[:max_length]} bytes"))
+            errors.add(
+              name,
+              I18n.t("mongoid_ext.storage.errors.max_length", :default => "file is too long. max length is #{opts[:max_length]} bytes")
+            )
           end
 
           if cb = opts[:validate]

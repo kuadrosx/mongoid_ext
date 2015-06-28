@@ -11,7 +11,9 @@ class StorageTest < Minitest::Test
     @avatar.put_file("an_avatar.png", @data)
     @avatar.save
     avatar = Avatar.find(@avatar.id)
+    p "#"*80
     data = avatar.fetch_file("an_avatar.png").data
+    p "."*80
     assert_equal data, "my avatar image"
   end
 
@@ -41,8 +43,8 @@ class StorageTest < Minitest::Test
     assert_equal @new_avatar.fetch_file("an_avatar.png").data, "my avatar image"
   end
 
-  def test_not_store_file_with_permanent_object
-    @avatar.put_file("an_avatar.png", @data)
+  def test_not_store_file_with_not_permanent_object
+    @new_avatar.put_file("an_avatar.png", @data)
     assert_nil @avatar.fetch_file("an_avatar.png").data
   end
 
@@ -60,23 +62,26 @@ class StorageTest < Minitest::Test
     setup_alternative
     @avatar.first_alternative = @alternative
     @avatar.save
-    fromdb = @avatar.reload
+    fromdb = Avatar.find(@avatar.id)
     assert_equal fromdb.first_alternative.data, @data
   end
 
   def test_store_file_in_alternative_list
+    setup_alternative
     @avatar.alternatives.put("an_alternative", @alternative)
     @avatar.save
-    @avatar.reload
-    assert_equal @avatar.alternatives.get("an_alternative").data, @data
+
+    @avatar = Avatar.find(@avatar.id)
+    assert_equal @data, @avatar.alternatives.get("an_alternative").data
   end
 
   def test_fetch_list_of_files
     [1,2,3].each do |n|
       @avatar.put_file("file#{n}", StringIO.new("data#{n}"))
     end
+    @avatar.save
     file_names = @avatar.files.map { |f| f.filename }
-    assert_equal file_names.size, 3
+    assert_equal 3, file_names.size
     [1,2,3].each do |n|
       assert_includes file_names, "file#{n}"
     end
@@ -86,11 +91,12 @@ class StorageTest < Minitest::Test
     [1,2,3].each do |n|
       @avatar.put_file("file#{n}", StringIO.new("data#{n}"))
     end
+    @avatar.save
 
     file_names = %w[file1 file2 file3]
     @avatar.file_list.each_file do |key, file|
       assert_includes file_names, key
-      assert_includes file_names, file.filename
+      assert_includes file_names, file.name
     end
   end
 end

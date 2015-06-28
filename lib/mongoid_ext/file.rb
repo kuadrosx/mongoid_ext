@@ -7,12 +7,13 @@ module MongoidExt
     field :extension, :type => String
     field :content_type, :type => String
     field :md5, :type => String
+    field :updated_at, :type => Time
 
     alias :filename :name
 
     def put(filename, io, options = {})
+      p "#{self.class}.put"
       mark_parent!
-
       options[:_id] = grid_filename
 
       options[:metadata] ||= {}
@@ -48,18 +49,22 @@ module MongoidExt
         gridfs.delete_one(old) if old
 
         # MONGO::Grid::File don't accept the same options that Mongoid::Gridfs
-        gridfs.insert_one(
+
+        fileid = gridfs.insert_one(
           Mongo::Grid::File.new(io.read, {:filename => grid_filename})
         )
+        p "saved as #{fileid} #{grid_filename}"
+        self['md5'] = gridfs.find_one(:filename => grid_filename).md5 if fileid
       else
         gridfs.delete(grid_filename)
         gridfs.put(io, options)
       end
+      self["updated_at"] = Time.now
+      mark_parent!
 
-      file = self.get
-      self['md5'] = file.md5 if file
+      io.close if io.closed?
 
-      file
+      self
     end
 
     def get
@@ -132,22 +137,14 @@ module MongoidExt
       end
     end
 
-    #def method_missing(name, *args, &block)
-      #f = self.get
-      #if f && f.respond_to?(name)
-        #f.send(name, *args, &block)
-      #else
-        #super(name, *args, &block)
-      #end
-    #end
-
     protected
     def gridfs
       _root_document.class.gridfs
     end
 
     def mark_parent!
-      _root_document.send("#{_list_name}_will_change!")
+      _root_document.send(:"#{_list_name}_will_change!")
+      p "#{self.class.to_s} mark_parent! #{_root_document.changes}"
     end
   end
 end

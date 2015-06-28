@@ -1,13 +1,13 @@
 GIT
   remote: git://github.com/mongodb/mongo-ruby-driver.git
-  revision: cd1c083c7a58d1ffa17f576fcfe56f765324119e
+  revision: f9279b37b1b231d47693220a929fa68861339fec
   specs:
     mongo (2.1.0)
       bson (~> 3.0)
 
 GIT
   remote: git://github.com/mongoid/mongoid.git
-  revision: 63a431d5d9a115391c360f26b70677eb9195aac1
+  revision: f870cd4972b35561acaa18bda1e7683b6285da31
   specs:
     mongoid (5.0.0)
       activemodel (~> 4.0)
@@ -28,7 +28,7 @@ GEM
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
     addressable (2.3.8)
-    bson (3.1.0)
+    bson (3.1.1)
     builder (3.2.2)
     coderay (1.1.0)
     descendants_tracker (0.0.4)

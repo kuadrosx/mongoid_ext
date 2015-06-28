@@ -2,7 +2,9 @@ class EmbeddedHash < Hash
   include ActiveModel::Validations
 
   def initialize(other = {})
-    super()
+    super
+
+    p "#{self.class} NEW(#{other})"
 
     if other
       other.each do |k,v|
@@ -11,6 +13,7 @@ class EmbeddedHash < Hash
     end
 
     self.assign_id
+    self
   end
 
   def self.allocate
@@ -35,7 +38,9 @@ class EmbeddedHash < Hash
   end
 
   def id
-    self["_id"]
+    mid = self.fetch(:_id, nil) || self.fetch('_id', nil)
+    p "#{self.class} GET ID #{mid}"
+    mid
   end
   alias :_id :id
 
@@ -47,12 +52,15 @@ class EmbeddedHash < Hash
     self.new(v)
   end
 
-#   def method_missing(name, *args, &block)
-#     @table.send(name, *args, &block)
-#   end
+  def [](key)
+    p "#{self}[#{key}]"
+
+    super(key)
+  end
 
   def assign_id
-    if fetch("_id", nil).nil?
+    old_id = self.fetch(:_id, nil) || self.fetch('_id', nil)
+    if old_id.nil?
       if defined? Moped::BSON::ObjectId
         self["_id"] = Moped::BSON::ObjectId.new.to_s
       else
