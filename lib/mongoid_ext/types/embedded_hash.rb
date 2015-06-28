@@ -2,15 +2,16 @@ class EmbeddedHash < Hash
   include ActiveModel::Validations
 
   def initialize(other = {})
-    super()
+    super
 
     if other
-      other.each do |k,v|
+      other.each do |k, v|
         self[k] = v
       end
     end
 
-    self.assign_id
+    assign_id
+    self
   end
 
   def self.allocate
@@ -23,7 +24,7 @@ class EmbeddedHash < Hash
   def self.field(name, opts = {})
     define_method(name) do
       if fetch(name.to_s, nil).nil?
-        self[name.to_s] = opts[:default].kind_of?(Proc) ? opts[:default].call : opts[:default]
+        self[name.to_s] = opts[:default].is_a?(Proc) ? opts[:default].call : opts[:default]
       else
         self[name.to_s]
       end
@@ -35,28 +36,29 @@ class EmbeddedHash < Hash
   end
 
   def id
-    self["_id"]
+    fetch(:_id, nil) || fetch('_id', nil)
   end
-  alias :_id :id
+  alias_method :_id, :id
 
   def self.mongoize(v)
     v
   end
 
   def self.demongoize(v)
-    self.new(v)
+    new(v)
   end
 
-#   def method_missing(name, *args, &block)
-#     @table.send(name, *args, &block)
-#   end
+  def [](key)
+    super(key)
+  end
 
   def assign_id
-    if fetch("_id", nil).nil?
+    old_id = id
+    if old_id.nil?
       if defined? Moped::BSON::ObjectId
-        self["_id"] = Moped::BSON::ObjectId.new.to_s
+        self['_id'] = Moped::BSON::ObjectId.new.to_s
       else
-        self["_id"] = BSON::ObjectId.new.to_s
+        self['_id'] = BSON::ObjectId.new.to_s
       end
     end
   end

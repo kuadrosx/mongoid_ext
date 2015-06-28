@@ -3,97 +3,84 @@ module MongoidExt
     attr_accessor :parent_document
     attr_accessor :list_name
 
-    def put(id, io, metadata = {})
+    def put(file_id, io, metadata = {})
+      get(file_id)
+      (@_pending_files ||= {})[file_id] = [io, metadata]
       mark_parent!
-
-      if !parent_document.new_record?
-        filename = id
-        if io.respond_to?(:original_filename)
-          filename = io.original_filename
-        elsif io.respond_to?(:path) && io.path
-          filename = ::File.basename(io.path)
-        elsif io.kind_of?(String)
-          io = StringIO.new(io)
-        end
-
-        get(id).put(filename, io, metadata)
-        self[id] = {
-          filename: filename
-        }.merge(metadata)
-
-        self[id]
-      else
-        (@_pending_files ||= {})[id] = [io, metadata]
-      end
     end
 
     def files
-      ids = self.keys
-      ids.delete("_id")
-      ids.map {|v| get(v) }
+      ids = keys
+      ids.delete('_id')
+      ids.map { |v| get(v) }
     end
 
-    def each_file(&block)
-      (self.keys-["_id"]).each do |key|
-        file = self.get(key)
+    def each_file(&_block)
+      (keys - ['_id']).each do |key|
+        file = get(key)
         yield key, file
       end
     end
 
-    def get(id)
-      mark_parent!
-
-      if id.kind_of?(MongoidExt::File)
-        self[id.id] = id
-        return id
+    def get(file_id)
+      if file_id.is_a?(MongoidExt::File)
+        self[file_id.id] = file_id
+        return file_id
       end
 
-      id = id.to_s.gsub(".", "_")
-      file = self[id]
+      file_id = file_id.to_s.tr('.', '_')
 
-      if file.nil?
-        file = self[id] = MongoidExt::File.new
-      elsif !file.kind_of?(MongoidExt::File) && file.kind_of?(::Hash)
-        file = self[id] = MongoidExt::File.new(file)
+      file = begin
+        f = self[file_id]
+        if f.nil?
+          self[file_id] = MongoidExt::File.new
+        elsif !f.is_a?(MongoidExt::File) && f.is_a?(::Hash)
+          self[file_id] = MongoidExt::File.new(f)
+        else
+          self[file_id]
+        end
       end
 
       file._root_document = parent_document
-      file._list_name = self.list_name
+      file._list_name = list_name
       file
     end
 
     def sync_files
-      if @_pending_files
-        @_pending_files.each do |filename, data|
-          put(filename, data[0], data[1])
-        end
-        @_pending_files = nil
+      return unless @_pending_files
+      changed = false
+      @_pending_files.each do |filename, data|
+        changed = true
+        get(filename).put(filename, data[0], data[1])
       end
+      mark_parent! if changed
+      @_pending_files = nil
     end
 
-    def delete(id)
-      mark_parent!
-
-      file = self.get(id)
-      super(id)
+    def delete(file_id)
+      file = get(file_id)
+      super(file_id)
       file.delete
+      mark_parent!
+      file
     end
 
     def destroy_files
-      each_file do |id, file|
-        get(id).delete
+      each_file do |file_id, _file|
+        get(file_id).delete
       end
+      mark_parent!
     end
 
     def self.mongoize(v)
-      Hash[v]
+      v
     end
 
     def self.demongoize(v)
       return if v.nil?
 
       doc = self.class.new
-      v.each do |k,c|
+      v.each do |k, c|
         doc[k] = MongoidExt::File.new(c)
       end
 
@@ -101,7 +88,8 @@ module MongoidExt
     end
 
     def mark_parent!
-      parent_document.send("#{list_name}_will_change!")
+      parent_document.send(:"#{list_name}_will_change!")
+      parent_document.send(:"#{list_name}=", self)
     end
   end
 end

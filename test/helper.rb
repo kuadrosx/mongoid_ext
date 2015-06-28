@@ -36,7 +36,7 @@ else
   Mongoid.load!("test/mongoid4.yml", "test")
 end
 
-Mongo::Logger.logger.level = Logger::WARN if MONGOID5
+# Mongo::Logger.logger.level = Logger::WARN if MONGOID5
 
 require 'models'
 

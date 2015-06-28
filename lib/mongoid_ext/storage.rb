@@ -36,7 +36,7 @@ module MongoidExt
     def __add_storage_errors
       storage_errors.each do |k, msgs|
         msgs.each do |msg|
-          self.errors.add(k, msg)
+          errors.add(k, msg)
         end
       end
     end
@@ -60,27 +60,30 @@ module MongoidExt
 
           return instance_variable_get(varname) if instance_variable_get(varname)
 
-          list = self[name]
-
-          if list.nil?
-            list = self[name] = MongoidExt::FileList.new
-          elsif list.kind_of?(::Hash)
-            list = self[name] = MongoidExt::FileList.new(list)
+          list = begin
+            l = self[name]
+            if l.nil?
+              self[name] = MongoidExt::FileList.new
+            elsif l.is_a?(::Hash)
+              self[name] = MongoidExt::FileList.new(l)
+            else
+              self[name]
+            end
           end
 
           list.parent_document = self
-          list.list_name = name
+          list.list_name = name.to_s
 
           instance_variable_set(varname, list)
           list
         end
 
-        set_callback(:create, :after) do |doc|
+        set_callback(:save, :after) do |doc|
           l = doc.send(name)
           l.sync_files
 
           query = doc._updates
-          if !query.blank?
+          unless query.blank?
             if MONGOID5
               doc.collection.find(:_id => doc.id).update_one(query)
             else
@@ -99,28 +102,28 @@ module MongoidExt
 
         define_method("#{name}=") do |file|
           if opts[:max_length] && file.respond_to?(:size) && file.size > opts[:max_length]
-            errors.add(name, I18n.t("mongoid_ext.storage.errors.max_length", :default => "file is too long. max length is #{opts[:max_length]} bytes"))
+            errors.add(
+              name,
+              I18n.t(
+                'mongoid_ext.storage.errors.max_length',
+                :default => "file is too long. max length is #{opts[:max_length]} bytes"
+              )
+            )
           end
 
-          if cb = opts[:validate]
-            if cb.kind_of?(Symbol)
-              send(opts[:validate], file)
-            elsif cb.kind_of?(Proc)
-              cb.call(file)
-            end
+          cb = opts[:validate]
+          if cb.is_a?(Symbol)
+            send(cb, file)
+          elsif cb.is_a?(Proc)
+            cb.call(file)
           end
 
-          if self.errors[name].blank?
-            fl = send(opts[:in])
-
-            if file.kind_of?(String)
-              file = StringIO.new(file)
-            end
-
-            fl.put(name.to_s, file)
+          if errors[name].blank?
+            file = StringIO.new(file) if file.is_a?(String)
+            send(opts[:in]).put(name.to_s, file)
           else
             # we store the errors here because we want to validate before storing the file
-            storage_errors.merge!(self.errors)
+            storage_errors.merge!(errors)
           end
         end
 
@@ -129,9 +132,10 @@ module MongoidExt
         end
 
         define_method("has_#{name}?") do
-          send(opts[:in]).has_key?(name.to_s)
+          send(opts[:in]).key?(name.to_s)
         end
       end
+
       private
     end
   end

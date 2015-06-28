@@ -7,32 +7,27 @@ module MongoidExt
     field :extension, :type => String
     field :content_type, :type => String
     field :md5, :type => String
+    field :updated_at, :type => Time
 
-    alias :filename :name
+    alias_method :filename, :name
 
     def put(filename, io, options = {})
-      mark_parent!
-
       options[:_id] = grid_filename
 
       options[:metadata] ||= {}
       options[:metadata][:collection] = _root_document.collection.name
 
-      self["name"] = filename
-      if filename =~ /\.([\w]{2,4})$/
-        self["extension"] = $1
-      end
+      self['name'] = filename
+      self['extension'] = Regexp.last_match(1) if filename =~ /\.([\w]{2,4})$/
 
-      if io.kind_of?(String)
-        io = StringIO.new(io)
-      end
+      io = StringIO.new(io) if io.is_a?(String)
 
       if defined?(Magic) && Magic.respond_to?(:guess_string_mime_type)
         data = io.read(256) # be nice with memory usage
-        self["content_type"] = options[:content_type] = Magic.guess_string_mime_type(data.to_s)
+        self['content_type'] = options[:content_type] = Magic.guess_string_mime_type(data.to_s)
 
-        if self.fetch("extension", nil).nil?
-          self["extension"] = options[:content_type].to_s.split("/").last.split("-").last
+        if fetch('extension', nil).nil?
+          self['extension'] = options[:content_type].to_s.split('/').last.split('-').last
         end
 
         if io.respond_to?(:rewind)
@@ -48,18 +43,20 @@ module MongoidExt
         gridfs.delete_one(old) if old
 
         # MONGO::Grid::File don't accept the same options that Mongoid::Gridfs
-        gridfs.insert_one(
-          Mongo::Grid::File.new(io.read, {:filename => grid_filename})
-        )
+        file = Mongo::Grid::File.new(io.read, :filename => grid_filename)
+        fileid = gridfs.insert_one(file)
+
+        self['md5'] = file.md5 if fileid
       else
         gridfs.delete(grid_filename)
         gridfs.put(io, options)
       end
+      self['updated_at'] = Time.now
+      mark_parent!
 
-      file = self.get
-      self['md5'] = file.md5 if file
+      io.close unless io.closed?
 
-      file
+      self
     end
 
     def get
@@ -73,9 +70,10 @@ module MongoidExt
           end
 
           def io.read
-            self.data
+            data
           end
-        rescue Mongoid::Errors::DocumentNotFound => e
+        rescue Mongoid::Errors::DocumentNotFound => _e
+          return nil
         end
         io
       end
@@ -86,11 +84,12 @@ module MongoidExt
     end
 
     def grid_filename
-      @grid_filename ||= "#{_root_document.collection.name}/#{self.id}"
+      self._id ||= BSON::ObjectId.new
+      @grid_filename ||= "#{_root_document.collection.name}/#{id}"
     end
 
     def mime_type
-      self.content_type || get.content_type
+      content_type || get.content_type
     end
 
     def size
@@ -98,27 +97,18 @@ module MongoidExt
     end
 
     def read(size = nil)
-      if size != nil
+      if size.nil?
         puts "#{__FILE__}:#{__LINE__} Passing size to read() is deprecated and will be removed soon. Use .each {} to read in blocks."
       end
 
-      self.get.data
+      get.data
     end
 
     def data
-      if self.get
-        self.get.data
+      if get
+        get.data
       else
-        puts "WARNING: the file you are trying to read doesn't exist: #{self.inspect}"
-        nil
-      end
-    end
-
-    def each(&block)
-      if self.get
-        self.get.each(&block)
-      else
-        puts "WARNING: the file you are trying to read doesn't exist: #{self.inspect}"
+        puts "WARNING: the file you are trying to read doesn't exist: #{inspect}"
         nil
       end
     end
@@ -132,22 +122,13 @@ module MongoidExt
       end
     end
 
-    #def method_missing(name, *args, &block)
-      #f = self.get
-      #if f && f.respond_to?(name)
-        #f.send(name, *args, &block)
-      #else
-        #super(name, *args, &block)
-      #end
-    #end
-
     protected
+
     def gridfs
       _root_document.class.gridfs
     end
 
     def mark_parent!
-      _root_document.send("#{_list_name}_will_change!")
     end
   end
 end
