@@ -7,7 +7,7 @@ class SetTest < Minitest::Test
 
   def setup
     @recipe = Recipe.new
-    @recipe.ingredients = Set.new(%w[salt sugar water salt sugar water])
+    @recipe.ingredients = Set.new(%w(salt sugar water salt sugar water))
     @recipe.save
   end
 

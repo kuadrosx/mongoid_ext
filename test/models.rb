@@ -7,7 +7,6 @@ class CreditCard # for encryptor
   encrypted_field :extra, :key => "my password"
 end
 
-
 class Event # for safe_update, and Timestamp
   include Mongoid::Document
 
@@ -35,7 +34,7 @@ class Avatar # for Storage and File
   file_key :first_alternative, :in => :alternatives
 end
 
-class UserConfig #for OpenStruct
+class UserConfig # for OpenStruct
   include Mongoid::Document
   field :entries, :type => MongoidExt::OpenStruct
 end
@@ -75,4 +74,4 @@ class Entry
   field :a, :type => Array
 end
 Entry.delete_all
-100.times {|v| Entry.create(:v => v)}
+100.times { |v| Entry.create(:v => v) }

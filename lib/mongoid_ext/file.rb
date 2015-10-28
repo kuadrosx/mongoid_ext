@@ -93,7 +93,9 @@ module MongoidExt
     end
 
     def size
-      get.file_length rescue nil
+      get.file_length
+    rescue
+      nil
     end
 
     def read(size = nil)

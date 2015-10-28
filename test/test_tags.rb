@@ -5,23 +5,23 @@ class TestTags < Minitest::Test
     BlogPost.delete_all
     @blogpost = BlogPost.create(:title => "operation systems",
                                 :body => "list of some operating systems",
-                                :tags => %w[list windows freebsd osx linux])
+                                :tags => %w(list windows freebsd osx linux))
     @blogpost2 = BlogPost.create(:title => "nosql database",
                                  :body => "list of some nosql databases",
-                                 :tags => %w[list mongodb redis couchdb])
+                                 :tags => %w(list mongodb redis couchdb))
   end
 
   def test_generate_tagcloud
     cloud = BlogPost.tag_cloud
 
-    [{"name"=>"list", "count"=>2.0},
-     {"name"=>"windows", "count"=>1.0},
-     {"name"=>"freebsd", "count"=>1.0},
-     {"name"=>"osx", "count"=>1.0},
-     {"name"=>"linux", "count"=>1.0},
-     {"name"=>"mongodb", "count"=>1.0},
-     {"name"=>"redis", "count"=>1.0},
-     {"name"=>"couchdb", "count"=>1.0}].each do |entry|
+    [{ "name" => "list", "count" => 2.0 },
+     { "name" => "windows", "count" => 1.0 },
+     { "name" => "freebsd", "count" => 1.0 },
+     { "name" => "osx", "count" => 1.0 },
+     { "name" => "linux", "count" => 1.0 },
+     { "name" => "mongodb", "count" => 1.0 },
+     { "name" => "redis", "count" => 1.0 },
+     { "name" => "couchdb", "count" => 1.0 }].each do |entry|
       assert_includes cloud, entry
     end
   end
@@ -36,7 +36,7 @@ class TestTags < Minitest::Test
 
   def test_find_with_tags_pattern
     tags = BlogPost.find_tags(/^li/)
-    [{"name"=>"list", "count"=>2.0}, {"name"=>"linux", "count"=>1.0}].each do |entry|
+    [{ "name" => "list", "count" => 2.0 }, { "name" => "linux", "count" => 1.0 }].each do |entry|
       assert_includes tags, entry
     end
     assert_equal tags.count, 2

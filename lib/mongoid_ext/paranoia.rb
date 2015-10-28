@@ -46,11 +46,11 @@ module MongoidExt #:nodoc:
     #
     # true
     def remove(options = {})
-      self.class.paranoia_klass.create(:document => self.raw_attributes)
+      self.class.paranoia_klass.create(:document => raw_attributes)
 
       super
     end
-    alias :delete :remove
+    alias_method :delete, :remove
 
     module ClassMethods #:nodoc:
       # Find deleted documents
@@ -62,9 +62,8 @@ module MongoidExt #:nodoc:
       #   <tt>Person.deleted.find("4c188dea7b17235a2a000001").first</tt>
       #   <tt>Person.deleted.compact!(1.week.ago)</tt>
       def deleted
-        self.paranoia_klass
+        paranoia_klass
       end
-
 
       def paranoia_klass
         parent_klass = self
@@ -75,24 +74,25 @@ module MongoidExt #:nodoc:
           cattr_accessor :parent_class
           self.parent_class = parent_klass
 
-          collection_name = "#{self.parent_class.collection.name}.trash"
+          collection_name = "#{parent_class.collection.name}.trash"
           store_in :collection => collection_name
 
           field :document, :type => Hash
 
-          before_validation :set_id, :on => :create
+          before_validation :setup_id, :on => :create
 
           def restore
-            self.class.parent_class.create(self.document)
+            self.class.parent_class.create(document)
           end
 
           def self.compact!(date = 1.month.ago)
-            self.delete_all(:created_at => {:$lte => date.to_time})
+            delete_all(:created_at => { :$lte => date.to_time })
           end
 
           private
-          def set_id
-            self["_id"] = self.document["_id"]
+
+          def setup_id
+            self["_id"] = document["_id"]
           end
         end
       end

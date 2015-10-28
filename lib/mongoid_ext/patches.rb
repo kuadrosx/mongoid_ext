@@ -1,9 +1,7 @@
 module Mongo
   class DB
     def nolock_eval(code, *args)
-      if not code.is_a? BSON::Code
-        code = BSON::Code.new(code)
-      end
+      code = BSON::Code.new(code) unless code.is_a? BSON::Code
 
       oh = BSON::OrderedHash.new
       oh[:$eval] = code

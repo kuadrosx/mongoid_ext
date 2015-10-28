@@ -7,16 +7,15 @@ module MongoidExt
 
     module ClassMethods
       def find!(*args)
-        find(*args) || raise(Mongoid::Errors::DocumentNotFound.new(self, args))
+        find(*args) || fail(Mongoid::Errors::DocumentNotFound.new(self, args))
       end
-
     end
 
     def raw_save(opts = {})
       return true if !changed? && !opts.delete(:force)
 
-      if (opts.delete(:validate) != false || valid?)
-        self.collection.save(raw_attributes, opts)
+      if opts.delete(:validate) != false || valid?
+        collection.save(raw_attributes, opts)
         true
       else
         false

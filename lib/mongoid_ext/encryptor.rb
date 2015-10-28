@@ -9,7 +9,7 @@ module MongoidExt
     module ClassMethods
       def encrypted_field(name, options = {})
         key = options.delete(:key)
-        raise ArgumentError, ":key option must be given" if key.nil?
+        fail ArgumentError, ":key option must be given" if key.nil?
 
         type = options.delete(:type)
 

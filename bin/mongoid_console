@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-$:.unshift(File.dirname(__FILE__) + '/../lib')
+$LOAD_PATH.unshift(File.dirname(__FILE__) + '/../lib')
 
 begin
   require 'mongoid_ext'
@@ -88,4 +88,3 @@ end
 catch(:IRB_EXIT) do
   irb.eval_input
 end
-

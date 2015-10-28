@@ -1,8 +1,10 @@
 require 'simplecov'
 
-module SimpleCov::Configuration
-  def clean_filters
-    @filters = []
+module SimpleCov
+  module Configuration
+    def clean_filters
+      @filters = []
+    end
   end
 end
 
@@ -36,7 +38,7 @@ else
   Mongoid.load!("test/mongoid4.yml", "test")
 end
 
-# Mongo::Logger.logger.level = Logger::WARN if MONGOID5
+Mongo::Logger.logger.level = Logger::WARN if MONGOID5
 
 require 'models'
 

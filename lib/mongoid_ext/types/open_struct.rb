@@ -11,13 +11,11 @@ module MongoidExt
     end
 
     def self.mongoize(value)
-      if value.kind_of?(self)
+      if value.is_a?(self)
         value.mongoize
-      elsif value.kind_of?(Hash)
+      elsif value.is_a?(Hash)
         value
-      else
-        nil
-      end
+            end
     end
   end
 end

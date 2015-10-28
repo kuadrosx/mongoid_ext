@@ -2,66 +2,69 @@ require 'time'
 require 'rack/utils'
 
 module MongoidExt
-class FileServer
-  def initialize(app)
-    @app = app
-  end
-
-  def call(env)
-    if env["PATH_INFO"] =~ /^\/_files\/([^\/?]+)/
-      @model = $1.classify.constantize rescue nil
-      return forbidden if @model.nil?
-
-      dup._call(env)
-    else
-      @app.call(env)
+  class FileServer
+    def initialize(app)
+      @app = app
     end
-  end
 
-  def _call(env)
-    request = Rack::Request.new(env)
-    params = request.GET
+    def call(env)
+      if env["PATH_INFO"] =~ /^\/_files\/([^\/?]+)/
+        @model = begin
+                   Regexp.last_match(1).classify.constantize
+                 rescue
+                   nil
+                 end
+        return forbidden if @model.nil?
 
-    @file = @model.find_file_from_params(params, request)
-    return not_found if @file.nil?
-
-    if @file.present?
-      serving
-    else
-      not_found
+        dup._call(env)
+      else
+        @app.call(env)
+      end
     end
-  end
 
-  def forbidden
-    body = "Forbidden\n"
-    [403, {"Content-Type" => "text/plain",
-           "Content-Length" => body.size.to_s,
-           "X-Cascade" => "pass"},
-     [body]]
-  end
+    def _call(env)
+      request = Rack::Request.new(env)
+      params = request.GET
 
-  def serving
-    body = self
-    [200, {
-      "Last-Modified"  => Time.now.httpdate,
-      "Content-Type"   => @file.content_type,
-      "Content-Length" => @file.size.to_s
-    }, body]
-  end
+      @file = @model.find_file_from_params(params, request)
+      return not_found if @file.nil?
 
-  def not_found
-    body = "File not found: #{@path_info}\n"
-    [404, {"Content-Type" => "text/plain",
-       "Content-Length" => body.size.to_s,
-       "X-Cascade" => "pass"},
-     [body]]
-  end
+      if @file.present?
+        serving
+      else
+        not_found
+      end
+    end
 
-  def each
-    @file.each do |part|
-      yield part
+    def forbidden
+      body = "Forbidden\n"
+      [403, { "Content-Type" => "text/plain",
+              "Content-Length" => body.size.to_s,
+              "X-Cascade" => "pass" },
+       [body]]
+    end
+
+    def serving
+      body = self
+      [200, {
+        "Last-Modified"  => Time.now.httpdate,
+        "Content-Type"   => @file.content_type,
+        "Content-Length" => @file.size.to_s
+      }, body]
+    end
+
+    def not_found
+      body = "File not found: #{@path_info}\n"
+      [404, { "Content-Type" => "text/plain",
+              "Content-Length" => body.size.to_s,
+              "X-Cascade" => "pass" },
+       [body]]
+    end
+
+    def each
+      @file.each do |part|
+        yield part
+      end
     end
   end
 end
-end
-

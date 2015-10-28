@@ -5,8 +5,8 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "mongoid_ext"
-    gem.summary = %Q{mongoid plugins}
-    gem.description = %Q{mongoid plugins}
+    gem.summary = %(mongoid plugins)
+    gem.description = %(mongoid plugins)
     gem.email = "krawek@gmail.com"
     gem.homepage = "http://github.com/dcu/mongoid_ext"
     gem.authors = ["David A. Cuadrado"]
@@ -41,4 +41,3 @@ task :default => :test
 
 require 'yard'
 YARD::Rake::YardocTask.new
-

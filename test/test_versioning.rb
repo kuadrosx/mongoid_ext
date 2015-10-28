@@ -8,7 +8,7 @@ class TestVersioning < Minitest::Test
     @blogpost = BlogPost.create!(
       :title => "operating systems",
       :body => "list of some operating systems",
-      :tags => %w[list windows freebsd osx linux],
+      :tags => %w(list windows freebsd osx linux),
       :updated_by => User.create(:login => "foo")
     )
   end

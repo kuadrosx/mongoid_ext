@@ -16,12 +16,12 @@ module MongoidExt
         extend Finder
 
         field :slug, :type => String
-        index({:slug => 1})
+        index(:slug => 1)
       end
     end
 
     def to_param
-      self.slug.blank? ? self.id.to_s : self.slug
+      slug.blank? ? id.to_s : slug
     end
 
     protected
@@ -37,13 +37,11 @@ module MongoidExt
       slug = self[self.class.slug_key].parameterize.to_s
       slug = slug[0, max_length] if max_length
 
-      if slug.size < min_length
-        slug = nil
-      end
+      slug = nil if slug.size < min_length
 
       if slug && self.class.slug_options[:add_prefix]
-        key = UUIDTools::UUID.random_create.hexdigest[0,4] #optimize
-        self.slug = key+"-"+slug
+        key = UUIDTools::UUID.random_create.hexdigest[0, 4] # optimize
+        self.slug = key + "-" + slug
       else
         self.slug = slug
       end
@@ -54,8 +52,8 @@ module MongoidExt
       # == Parameters
       # @param [Symbol] key the field to be slugized
       # @param [Hash] options options to configure the process
-      # @return 
-      #   
+      # @return
+      #
       def slug_key(key = :name, options = {})
         @slug_options ||= options
         @callback_type ||= begin
@@ -78,9 +76,9 @@ module MongoidExt
       # @param [Strig] id slug or id
       # @param [Hash] options additional conditions
       def by_slug(id, options = {})
-        self.where(options.merge({:slug => id})).first || self.where(options.merge({:_id => id})).first
+        where(options.merge(:slug => id)).first || where(options.merge(:_id => id)).first
       end
-      alias :find_by_slug_or_id :by_slug
+      alias_method :find_by_slug_or_id, :by_slug
     end
   end
 end

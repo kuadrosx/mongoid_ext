@@ -22,6 +22,10 @@ group :development do
 end
 
 group :test do
-  gem "mongoid-grid_fs" rescue ''
+  begin
+    gem "mongoid-grid_fs"
+  rescue
+    ''
+  end
   gem "magic"
 end

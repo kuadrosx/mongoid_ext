@@ -7,11 +7,9 @@ class UpdateTest < Minitest::Test
     end_date = start_date.tomorrow
 
     event.safe_update(
-      %w[start_date end_date], {
-        "start_date" => start_date,
-        "end_date" => end_date,
-        "password" => "hacked"
-      }
+      %w(start_date end_date),         "start_date" => start_date,
+                                       "end_date" => end_date,
+                                       "password" => "hacked"
     )
     assert_equal event.password, "original"
     assert_equal event.start_date.to_s, start_date.to_s

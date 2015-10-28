@@ -20,7 +20,7 @@ module MongoidExt
 
         references_many name, opts
       end
-      alias :has_many :many
+      alias_method :has_many, :many
 
       def one(name, opts = {})
         if fkey = opts.delete(:foreign_key)
@@ -29,7 +29,7 @@ module MongoidExt
 
         references_one name, opts
       end
-      alias :has_one :one
+      alias_method :has_one, :one
 
       def belongs_to(name, opts = {})
         if fkey = opts.delete(:foreign_key)
@@ -37,7 +37,7 @@ module MongoidExt
         end
 
         if opts[:polymorphic]
-          raise ArgumentError, "polymorphic associations are not supported yet"
+          fail ArgumentError, "polymorphic associations are not supported yet"
         end
 
         referenced_in name, opts
@@ -50,7 +50,7 @@ module MongoidExt
       def key(name, *args)
         opts = args.extract_options!
 
-        opts[:type] = args.first if !args.empty?
+        opts[:type] = args.first unless args.empty?
 
         field name, opts
       end

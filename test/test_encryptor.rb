@@ -2,16 +2,16 @@ require 'helper'
 
 class EncryptorTest < Minitest::Test
   def setup
-    @cc = CreditCard.create(:number => 12345, :data => {:month => 10, :year => 2014})
+    @cc = CreditCard.create(:number => 12_345, :data => { :month => 10, :year => 2014 })
     @cc.reload
   end
 
   def test_load_number
-    assert_equal @cc.number, 12345
+    assert_equal @cc.number, 12_345
   end
 
   def test_load_hash
-    assert_equal @cc.data, {:month => 10, :year => 2014}
+    assert_equal @cc.data, :month => 10, :year => 2014
   end
 
   def test_encrypt_field

@@ -1,7 +1,6 @@
 require 'helper'
 
 class TestVoteable < Minitest::Test
-
   def setup
     User.delete_all
     @user = User.create!(:login => "foo", :email => "foo@bar.baz")
@@ -73,4 +72,3 @@ class TestVoteable < Minitest::Test
     assert_equal @user.voted?("voter_id2"), false
   end
 end
-

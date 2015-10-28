@@ -1,4 +1,4 @@
-$:.unshift File.dirname(__FILE__)
+$LOAD_PATH.unshift File.dirname(__FILE__)
 require 'bundler/setup'
 
 Bundler.require
@@ -59,7 +59,7 @@ module MongoidExt
   def self.init
     Mongoid::GridFS.file_model.field :_id, :type => String # to keep backwards compat
     Mongoid.allow_dynamic_fields = true
-    load_jsfiles(::File.dirname(__FILE__)+"/mongoid_ext/js")
+    load_jsfiles(::File.dirname(__FILE__) + "/mongoid_ext/js")
   end
 
   def self.load_jsfiles(path)
@@ -74,4 +74,3 @@ module MongoidExt
     end
   end
 end
-

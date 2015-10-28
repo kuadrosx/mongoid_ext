@@ -23,26 +23,26 @@ class Translation < String
 
   def default_language=(lang)
     @keys["default"] = lang
-    self.replace(@keys[lang.to_s])
+    replace(@keys[lang.to_s])
   end
 
   def self.build(keys, default = "en")
-    tr = self.new
+    tr = new
     tr.keys = keys
     tr.default_language = default
     tr
   end
 
   def self.mongoize(value)
-    return value.keys if value.kind_of?(self)
+    return value.keys if value.is_a?(self)
 
     @keys
   end
 
   def self.demongoize(value)
-    return value if value.kind_of?(self)
+    return value if value.is_a?(self)
 
-    result = self.new
+    result = new
     result.keys = value
     result.default_language = value["default"] || "en"
 
