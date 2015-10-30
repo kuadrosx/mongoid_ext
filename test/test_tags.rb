@@ -3,26 +3,35 @@ require 'helper'
 class TestTags < Minitest::Test
   def setup
     BlogPost.delete_all
-    @blogpost = BlogPost.create(:title => "operation systems",
-                                :body => "list of some operating systems",
-                                :tags => %w(list windows freebsd osx linux))
-    @blogpost2 = BlogPost.create(:title => "nosql database",
-                                 :body => "list of some nosql databases",
-                                 :tags => %w(list mongodb redis couchdb))
+    @blogpost = BlogPost.create(
+      :title => "operation systems",
+      :body => "list of some operating systems",
+      :tags => %w(list windows freebsd osx linux)
+    )
+    @blogpost2 = BlogPost.create(
+      :title => "nosql database",
+      :body => "list of some nosql databases",
+      :tags => %w(list mongodb redis couchdb)
+    )
   end
 
   def test_generate_tagcloud
     cloud = BlogPost.tag_cloud
-
-    [{ "name" => "list", "count" => 2.0 },
-     { "name" => "windows", "count" => 1.0 },
-     { "name" => "freebsd", "count" => 1.0 },
-     { "name" => "osx", "count" => 1.0 },
-     { "name" => "linux", "count" => 1.0 },
-     { "name" => "mongodb", "count" => 1.0 },
-     { "name" => "redis", "count" => 1.0 },
-     { "name" => "couchdb", "count" => 1.0 }].each do |entry|
+    [
+      { "name" => "list", "count" => 2.0 }, { "name" => "windows", "count" => 1.0 },
+      { "name" => "freebsd", "count" => 1.0 }, { "name" => "osx", "count" => 1.0 },
+      { "name" => "linux", "count" => 1.0 }, { "name" => "mongodb", "count" => 1.0 },
+      { "name" => "redis", "count" => 1.0 }, { "name" => "couchdb", "count" => 1.0 }
+    ].each do |entry|
       assert_includes cloud, entry
+    end
+  end
+
+  def test_generate_scoped_tagcloud
+    cloud = BlogPost.tag_cloud(:title => "nosql database")
+    tags = %w(couchdb redis mongodb list)
+    cloud.each do |entry|
+      assert_includes tags, entry["name"]
     end
   end
 

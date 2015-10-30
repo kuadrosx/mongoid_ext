@@ -21,6 +21,7 @@ begin
 rescue LoadError
   $stderr.puts "disabling `magic` support. use 'gem install magic' to enable it"
 end
+WITH_MAGIC = defined?(Magic) && Magic.respond_to?(:guess_string_mime_type)
 
 require 'mongoid_ext/patches'
 require 'mongoid_ext/encryptor'

@@ -28,7 +28,7 @@ module MongoidExt
         return file_id
       end
 
-      file_id = file_id.to_s.tr('.', '_')
+      file_id = normalize_id(file_id)
 
       file = begin
         f = self[file_id]
@@ -59,7 +59,7 @@ module MongoidExt
 
     def delete(file_id)
       file = get(file_id)
-      super(file_id)
+      super(normalize_id(file_id))
       file.delete
       mark_parent!
       file
@@ -67,7 +67,7 @@ module MongoidExt
 
     def destroy_files
       each_file do |file_id, _file|
-        get(file_id).delete
+        delete(file_id)
       end
       mark_parent!
     end
@@ -90,6 +90,10 @@ module MongoidExt
     def mark_parent!
       parent_document.send(:"#{list_name}_will_change!")
       parent_document.send(:"#{list_name}=", self)
+    end
+
+    def normalize_id(file_id)
+      file_id.to_s.tr('.', '_')
     end
   end
 end

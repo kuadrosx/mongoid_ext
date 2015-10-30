@@ -12,32 +12,11 @@ module MongoidExt
     alias_method :filename, :name
 
     def put(filename, io, options = {})
-      options[:_id] = grid_filename
-
-      options[:metadata] ||= {}
-      options[:metadata][:collection] = _root_document.collection.name
-
       self['name'] = filename
-      self['extension'] = Regexp.last_match(1) if filename =~ /\.([\w]{2,4})$/
 
       io = StringIO.new(io) if io.is_a?(String)
+      setup_content_data(io, filename)
 
-      if defined?(Magic) && Magic.respond_to?(:guess_string_mime_type)
-        data = io.read(256) # be nice with memory usage
-        self['content_type'] = options[:content_type] = Magic.guess_string_mime_type(data.to_s)
-
-        if fetch('extension', nil).nil?
-          self['extension'] = options[:content_type].to_s.split('/').last.split('-').last
-        end
-
-        if io.respond_to?(:rewind)
-          io.rewind
-        else
-          io.seek(0)
-        end
-      end
-
-      options[:filename] = grid_filename
       if MONGOID5
         old = gridfs.find_one(:filename => grid_filename)
         gridfs.delete_one(old) if old
@@ -49,10 +28,10 @@ module MongoidExt
         self['md5'] = file.md5 if fileid
       else
         gridfs.delete(grid_filename)
+        setup_metadata(options)
         gridfs.put(io, options)
       end
       self['updated_at'] = Time.now
-      mark_parent!
 
       io.close unless io.closed?
 
@@ -118,7 +97,8 @@ module MongoidExt
     def delete
       @io = nil
       if MONGOID5
-        gridfs.delete_one(grid_filename)
+        file = get
+        gridfs.delete_one(get) if file
       else
         gridfs.delete(grid_filename)
       end
@@ -130,7 +110,40 @@ module MongoidExt
       _root_document.class.gridfs
     end
 
-    def mark_parent!
+    def setup_metadata(options)
+      options[:_id] = grid_filename
+      options[:metadata] ||= {}
+      options[:metadata][:collection] = _root_document.collection.name
+      content_type = fetch('content_type', nil)
+      options[:content_type] = content_type unless content_type.nil?
+      options[:filename] = grid_filename
+      options
+    end
+
+    def setup_content_data(io, filename)
+      extension = nil
+      extension = Regexp.last_match(1) if filename =~ /\.([\w]{2,4})$/
+      content_type = guess_content_type(io)
+      self['content_type'] = content_type
+      self['extension'] = extension
+
+      return if content_type.nil? || !extension.nil?
+
+      self['extension'] = content_type.to_s.split('/').last.split('-').last
+    end
+
+    private
+
+    def guess_content_type(io)
+      return unless WITH_MAGIC
+      data = io.read(256) # be nice with memory usage
+      content_ype = Magic.guess_string_mime_type(data.to_s)
+      if io.respond_to?(:rewind)
+        io.rewind
+      else
+        io.seek(0)
+      end
+      content_ype
     end
   end
 end

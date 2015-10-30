@@ -47,8 +47,17 @@ class StorageTest < Minitest::Test
     assert_nil @avatar.fetch_file('an_avatar.png').data
   end
 
+  def test_delete_file
+    @avatar.put_file('an_avatar.png', @data)
+    @avatar.save
+    @avatar.delete_file('an_avatar.png')
+    @avatar.save
+    assert_nil @avatar.fetch_file('an_avatar.png').data
+  end
+
   def teardown
     @alternative.close if @alternative && !@alternative.closed?
+    @avatar.file_list.destroy_files
   end
 
   def setup_alternative
