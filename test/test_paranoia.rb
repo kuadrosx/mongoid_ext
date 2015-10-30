@@ -17,6 +17,14 @@ class TestParanoia < Minitest::Test
     assert_equal User.count, 0
   end
 
+  def test_delete_permanently
+    @user.destroy
+    assert_equal User.deleted.count, 1
+    assert_equal User.count, 0
+    @user.destroy!
+    assert_equal User.deleted.count, 0
+  end
+
   def test_restore_deleted_record
     @user.destroy
     assert_equal User.deleted.first.restore.email, "foo@bar.baz"

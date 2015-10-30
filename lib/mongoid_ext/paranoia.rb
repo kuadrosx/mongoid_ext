@@ -31,8 +31,16 @@ module MongoidExt #:nodoc:
     # Example:
     #
     # <tt>document.delete!</tt>
-    def delete!
-      Mongoid::Persistence::Remove.new(self).persist
+    def delete!(options = {})
+      raise Errors::ReadonlyDocument.new(self.class) if readonly?
+      prepare_delete do
+        if embedded?
+          delete_as_embedded(options)
+        else
+          delete_as_root
+        end
+      end
+      self.class.deleted.where(:"document._id" => id).destroy
     end
 
     # Delete the +Document+, will set the deleted_at timestamp and not actually
@@ -46,7 +54,7 @@ module MongoidExt #:nodoc:
     #
     # true
     def remove(options = {})
-      self.class.paranoia_klass.create(:document => raw_attributes)
+      self.class.deleted.create(:document => raw_attributes)
 
       super
     end
@@ -66,8 +74,14 @@ module MongoidExt #:nodoc:
       end
 
       def paranoia_klass
+        @paranoia_klass ||= define_paranoia_klass
+      end
+
+      private
+
+      def define_paranoia_klass
         parent_klass = self
-        @paranoia_klass ||= Class.new do
+        Class.new do
           include Mongoid::Document
           include Mongoid::Timestamps
 
@@ -79,7 +93,7 @@ module MongoidExt #:nodoc:
 
           field :document, :type => Hash
 
-          before_validation :setup_id, :on => :create
+          before_validation { self["_id"] = document["_id"] }
 
           def restore
             self.class.parent_class.create(document)
@@ -87,12 +101,6 @@ module MongoidExt #:nodoc:
 
           def self.compact!(date = 1.month.ago)
             delete_all(:created_at => { :$lte => date.to_time })
-          end
-
-          private
-
-          def setup_id
-            self["_id"] = document["_id"]
           end
         end
       end
