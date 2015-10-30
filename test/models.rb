@@ -44,8 +44,19 @@ class User
   include MongoidExt::Paranoia
   include MongoidExt::Voteable
 
+  embeds_many :pictures
+
   field :login
   field :email
+end
+
+class Picture # for Voteable
+  include Mongoid::Document
+  include MongoidExt::Voteable
+  embedded_in :user
+
+  field :title
+  field :content
 end
 
 class BlogPost # for Slug and Filter

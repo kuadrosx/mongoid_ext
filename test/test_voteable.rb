@@ -71,4 +71,11 @@ class TestVoteable < Minitest::Test
     assert_equal @user.voted?("voter_id1"), true
     assert_equal @user.voted?("voter_id2"), false
   end
+
+  def test_vote_on_embedded_models
+    picture = @user.pictures.create(:title => "Mona Lisa")
+    picture.vote!(1, "voter_id1")
+    @user.reload
+    assert_equal @user.pictures.first.votes_average, 1
+  end
 end

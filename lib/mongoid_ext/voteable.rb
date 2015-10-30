@@ -20,7 +20,7 @@ module MongoidExt
       if v && !v.empty?
         self[:votes].include?(voter_id)
       else
-        self.class.where({ :_id => id, :"votes.#{voter_id}".exists => true }).exists?
+        self.class.where(:_id => id, :"votes.#{voter_id}".exists => true).exists?
       end
     end
 
@@ -55,60 +55,45 @@ module MongoidExt
     end
 
     def add_vote!(value, voter_id, &block)
-      if embedded?
-        updates = { atomic_position + ".votes_count" => 1,
-                    atomic_position + ".votes_average" => value.to_i }
-        if value == 1
-          updates[atomic_position + ".votes_up"] = 1
-        elsif value == -1
-          updates[atomic_position + ".votes_down"] = 1
-        end
-
-        _parent.inc(updates)
-      else
-        updates = { :votes_count => 1, :votes_average => value.to_i }
-        if value == 1
-          updates[:votes_up] = 1
-        elsif value == -1
-          updates[:votes_down] = 1
-        end
-
-        inc(updates)
-      end
-
+      persist_vote(value)
       block.call(value, :add) if block
-
       on_add_vote(value, voter_id) if self.respond_to?(:on_add_vote)
     end
 
     def remove_vote!(value, voter_id, &block)
-      if embedded?
-        updates = { atomic_position + ".votes_count" => -1,
-                    atomic_position + ".votes_average" => -value.to_i }
-        if value == 1
-          updates[atomic_position + ".votes_up"] = -1
-        elsif value == -1
-          updates[atomic_position + ".votes_down"] = -1
-        end
-
-        _parent.increment(updates)
-      else
-        updates = { :votes_count => -1, :votes_average => -value }
-        if value == 1
-          updates[:votes_up] = -1
-        elsif value == -1
-          updates[:votes_down] = -1
-        end
-
-        inc(updates)
-      end
-
+      persist_vote(value, false)
       block.call(value, :remove) if block
-
       on_remove_vote(value, voter_id) if self.respond_to?(:on_remove_vote)
     end
 
     module ClassMethods
+    end
+
+    private
+
+    def persist_vote(value, add = true)
+      delta = add ? 1 : -1
+
+      field_prefix = ''
+      target = self
+
+      if embedded?
+        field_prefix = "#{atomic_position}."
+        target = _parent
+      end
+
+      updates = {
+        :"#{field_prefix}votes_count" => delta,
+        :"#{field_prefix}votes_average" => delta * value.to_i
+      }
+
+      if value == 1
+        updates[:"#{field_prefix}votes_up"] = delta
+      elsif value == -1
+        updates[:"#{field_prefix}votes_down"] = delta
+      end
+
+      target.inc(updates)
     end
   end
 end
