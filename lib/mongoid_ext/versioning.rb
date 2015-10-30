@@ -17,18 +17,15 @@ module MongoidExt
     end
 
     def rollback!(pos = nil)
-      pos = versions_count - 1 if pos.nil?
+      pos ||= versions_count - 1
       version = version_at(pos)
+      return false unless version
 
-      if version
-        version.data.each do |key, value|
-          send("#{key}=", value)
-        end
+      version.load(self)
 
-        owner_field = self.class.versionable_options[:owner_field]
-        self[owner_field] = version[owner_field] unless changes.include?(owner_field)
-        self.updated_at = version.date if self.respond_to?(:updated_at) && !self.updated_at_changed?
-      end
+      owner_field = self.class.versionable_options[:owner_field]
+      self[owner_field] = version[owner_field] unless changes.include?(owner_field)
+      self.updated_at = version.date if self.respond_to?(:updated_at) && !self.updated_at_changed?
 
       @rolling_back = true
       r = save!
@@ -37,14 +34,11 @@ module MongoidExt
     end
 
     def load_version(pos = nil)
-      pos = versions_count - 1 if pos.nil?
+      pos ||= versions_count - 1
       version = version_at(pos)
 
-      if version
-        version.data.each do |key, value|
-          send("#{key}=", value)
-        end
-      end
+      return unless version
+      version.load(self)
     end
 
     def diff(key, pos1, pos2, format = :html)
@@ -84,17 +78,18 @@ module MongoidExt
     end
 
     def version_at(pos)
-      case pos.to_s
-      when "current"
-        current_version
-      when "first"
-        version_klass.find(version_ids.first)
-      when "last"
-        version_klass.find(version_ids.last)
-      else
-        version_id = version_ids[pos]
-        version_klass.find(version_ids[pos]) if version_id
-      end
+      return current_version if pos == 'current'
+
+      pos = case pos.to_s
+            when "first"
+              version_ids.first
+            when "last"
+              version_ids.last
+            else
+              version_ids[pos]
+            end
+
+      version_klass.find(pos) if pos
     end
 
     def versions
@@ -138,7 +133,14 @@ module MongoidExt
             end
           end
 
-                             private
+          def load(doc)
+            return false unless doc.is_a? target_class
+            data.each do |key, value|
+              doc.send("#{key}=", value)
+            end
+          end
+
+          private
 
           def target_class
             @target_class ||= target_type.constantize
@@ -146,11 +148,19 @@ module MongoidExt
 
           def add_version
             if MONGOID5
-              target_class.collection.find(:_id => target_id).update_one(:$push => { :version_ids => id },
-                                                                         :$inc =>  { :versions_count => 1 })
+              target_class.collection.find(
+                :_id => target_id
+              ).update_one(
+                :$push => { :version_ids => id },
+                :$inc =>  { :versions_count => 1 }
+              )
             else
-              target_class.collection.find(:_id => target_id).update(:$push => { :version_ids => id },
-                                                                     :$inc =>  { :versions_count => 1 })
+              target_class.collection.find(
+                :_id => target_id
+              ).update(
+                :$push => { :version_ids => id },
+                :$inc =>  { :versions_count => 1 }
+              )
             end
           end
         end
@@ -181,7 +191,8 @@ module MongoidExt
           data = {}
           message = ""
           keys.each do |key|
-            if change = changes[key.to_s]
+            change = changes[key.to_s]
+            if change
               data[key.to_s] = change.first
             else
               data[key.to_s] = self[key]
@@ -189,7 +200,8 @@ module MongoidExt
           end
           return true if data.empty?
 
-          if message_changes = changes["version_message"]
+          message_changes = changes["version_message"]
+          if message_changes
             message = message_changes.first
           else
             message = ""
@@ -207,10 +219,12 @@ module MongoidExt
             self.class.set_callback(:save, :before, :save_version)
           end
 
-          version_klass.create!('data' => data,
-                                'owner_id' => uuser_id,
-                                'target' => self,
-                                'message' => message)
+          version_klass.create!(
+            'data' => data,
+            'owner_id' => uuser_id,
+            'target' => self,
+            'message' => message
+          )
         end
 
         define_method(:versioned_keys) do
