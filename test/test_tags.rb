@@ -45,7 +45,9 @@ class TestTags < Minitest::Test
 
   def test_find_with_tags_pattern
     tags = BlogPost.find_tags(/^li/)
-    [{ "name" => "list", "count" => 2.0 }, { "name" => "linux", "count" => 1.0 }].each do |entry|
+    [
+      { "name" => "list", "count" => 2.0 }, { "name" => "linux", "count" => 1.0 }
+    ].each do |entry|
       assert_includes tags, entry
     end
     assert_equal tags.count, 2

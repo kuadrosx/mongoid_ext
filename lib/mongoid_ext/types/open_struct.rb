@@ -15,7 +15,7 @@ module MongoidExt
         value.mongoize
       elsif value.is_a?(Hash)
         value
-            end
+      end
     end
   end
 end

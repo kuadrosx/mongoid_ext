@@ -34,7 +34,12 @@ class TimestampTest < Minitest::Test
     @event2 = Event.create!(:start_date => start_time.utc, :end_date => end_time.utc)
 
     assert_equal Event.count, 2
-    events = Event.where("this.start_date >= %d && this.start_date <= %d" % [@event.start_date.yesterday.to_i, @event2.start_date.yesterday.to_i])
+    jscode = format(
+      "this.start_date >= %d && this.start_date <= %d",
+      @event.start_date.yesterday.to_i,
+      @event2.start_date.yesterday.to_i
+    )
+    events = Event.where(jscode)
 
     assert_equal events, [@event]
   end

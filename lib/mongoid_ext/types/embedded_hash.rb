@@ -4,13 +4,12 @@ class EmbeddedHash < Hash
   def initialize(other = {})
     super
 
-    if other
-      other.each do |k, v|
-        self[k] = v
-      end
+    assign_id
+    return self unless other
+    other.each do |k, v|
+      self[k] = v
     end
 
-    assign_id
     self
   end
 
@@ -24,10 +23,11 @@ class EmbeddedHash < Hash
   def self.field(name, opts = {})
     define_method(name) do
       if fetch(name.to_s, nil).nil?
-        self[name.to_s] = opts[:default].is_a?(Proc) ? opts[:default].call : opts[:default]
-      else
-        self[name.to_s]
+        self[name.to_s] = opts[:default]
+        self[name.to_s] = opts[:default].call if opts[:default].is_a?(Proc)
       end
+
+      self[name.to_s]
     end
 
     define_method("#{name}=") do |v|
@@ -54,12 +54,11 @@ class EmbeddedHash < Hash
 
   def assign_id
     old_id = id
-    if old_id.nil?
-      if defined? Moped::BSON::ObjectId
-        self['_id'] = Moped::BSON::ObjectId.new.to_s
-      else
-        self['_id'] = BSON::ObjectId.new.to_s
-      end
+    return unless old_id.nil?
+    if defined? Moped::BSON::ObjectId
+      self['_id'] = Moped::BSON::ObjectId.new.to_s
+    else
+      self['_id'] = BSON::ObjectId.new.to_s
     end
   end
 end

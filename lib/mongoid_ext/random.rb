@@ -13,8 +13,8 @@ module MongoidExt
     module ClassMethods
       def random(conditions = {})
         r = rand
-        doc = where(conditions.merge(:_random.gte => r)).order_by(:_random_times.asc, :_random.asc).first ||
-              where(conditions.merge(:_random.lte => r)).order_by(:_random_times.asc, :_random.asc).first
+        doc = where(conditions.merge(:_random.gte => r)).asc(:_random_times, :_random).first
+        doc ||= where(conditions.merge(:_random.lte => r)).asc(:_random_times, :_random).first
         doc.inc(:_random_times => 1.0) if doc
         doc
       end
