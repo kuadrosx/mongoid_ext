@@ -124,7 +124,7 @@ module MongoidExt
 
           validates_presence_of :target_id
 
-          def content(key)
+          define_method(:content) do |key|
             cdata = data[key.to_s]
             if cdata.respond_to?(:join)
               cdata.join(" ")
@@ -133,7 +133,7 @@ module MongoidExt
             end
           end
 
-          def load(doc)
+          define_method(:load) do |doc|
             return false unless doc.is_a? target_class
             data.each do |key, value|
               doc.send("#{key}=", value)
@@ -142,11 +142,11 @@ module MongoidExt
 
           private
 
-          def target_class
+          define_method(:target_class) do
             @target_class ||= target_type.constantize
           end
 
-          def add_version
+          define_method(:add_version) do
             if MONGOID5
               target_class.collection.find(
                 :_id => target_id

@@ -95,7 +95,7 @@ module MongoidExt #:nodoc:
 
           before_validation { self["_id"] = document["_id"] }
 
-          def restore
+          define_method(:restore) do
             self.class.parent_class.create(document)
           end
 

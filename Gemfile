@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-gem 'mongoid', :github => "mongoid/mongoid"
+gem 'mongoid', :github => "mongodb/mongoid"
 
 gem 'uuidtools', '>= 2.1.1'
 gem 'i18n'
