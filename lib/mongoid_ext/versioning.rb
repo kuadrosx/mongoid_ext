@@ -157,7 +157,7 @@ module MongoidExt
             else
               target_class.collection.find(
                 :_id => target_id
-              ).update(
+              ).update_many(
                 :$push => { :version_ids => id },
                 :$inc =>  { :versions_count => 1 }
               )

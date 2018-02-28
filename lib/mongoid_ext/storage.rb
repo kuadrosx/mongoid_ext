@@ -87,7 +87,7 @@ module MongoidExt
             if MONGOID5
               doc.collection.find(:_id => doc.id).update_one(query)
             else
-              doc.collection.find(:_id => doc.id).update(query)
+              doc.collection.find(:_id => doc.id).update_many(query)
             end
           end
         end
